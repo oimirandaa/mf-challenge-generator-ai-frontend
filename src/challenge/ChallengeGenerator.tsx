@@ -1,9 +1,12 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {type Challenge, MCQChallenge} from "./MCQChallenge.tsx";
+import {useApi} from "../utils/api.ts";
 
 export interface Quota {
     quota_remaining: number;
+    last_reset_date: Date
 }
+
 export function ChallengeGenerator() {
     const[challenge, setChallenge] = useState<Challenge | null>(null)
     const[isLoading, setIsLoading] = useState<boolean>(false)
@@ -11,9 +14,53 @@ export function ChallengeGenerator() {
     const[difficulty, setDifficulty] = useState<string>("easy")
     const[quota, setQuota] = useState<Quota | null>(null)
     
-    const fetchQuota = async () => {}
-    const generateChallenge = async () => {}
-    const getNextResetTime = () => {}
+    const {makeRequest} = useApi()
+    
+    useEffect(() => {
+        fetchQuota()
+    }, [])
+    
+    const fetchQuota = async () => {
+        try {
+            const data = await makeRequest("quota")
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            setQuota(data)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+    
+    const generateChallenge = async () => {
+        setIsLoading(true)
+        setError(null)
+        
+        try {
+            const data = await makeRequest("generate-challenge",
+                {
+                    method: "POST",
+                    body: JSON.stringify({difficulty})
+                })
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            setChallenge(data)
+            fetchQuota()
+        } catch (error: unknown) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            setError(error.message || "Failed to generate challenge")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+    
+    const getNextResetTime = () => {
+        if (!quota?.last_reset_date) return null
+        
+        const resetDate = new Date(quota.last_reset_date)
+        resetDate.setHours(resetDate.getHours() + 24)
+        return resetDate
+    }
     
     return <>
         <div className="challenge-container">
@@ -23,7 +70,7 @@ export function ChallengeGenerator() {
                 <p>Challenges remaining today: {quota?.quota_remaining || 0} </p>
                 {
                     quota?.quota_remaining === 0 && (
-                        <p>The next reset is: {0}</p>
+                        <p>The next reset is: {getNextResetTime()?.toLocaleString()}</p>
                     )
                 }
             </div>
