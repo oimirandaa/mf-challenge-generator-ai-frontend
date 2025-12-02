@@ -1,14 +1,5 @@
 import {useState} from "react";
-
-
-export interface Challenge {
-    id: number;
-    difficulty: string;
-    title: string;
-    options: string[];
-    correct_answer_id: number;
-    explanation: string;
-}
+import type {Challenge} from "../models/Challenge.ts";
 
 
 export function MCQChallenge({challenge, showExplanation=false}: { challenge: Challenge, showExplanation?: boolean}) {

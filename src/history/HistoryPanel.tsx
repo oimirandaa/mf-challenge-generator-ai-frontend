@@ -23,7 +23,6 @@ export function HistoryPanel() {
             const defaultOptions = {
                 headers: {
                     "Content-Type": "application/json",
-                    "Method": "GET",
                     "Authorization": `Bearer ${token}`
                 }
             }
