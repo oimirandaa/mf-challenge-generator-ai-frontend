@@ -1,12 +1,15 @@
 import {useEffect, useState} from "react";
-import {type Challenge, MCQChallenge} from "../challenge/MCQChallenge.tsx";
-import {useApi} from "../utils/api.ts";
+import type {Challenge} from "../models/Challenge.ts";
+import {useAuth} from "@clerk/clerk-react";
+import {MCQChallenge} from "../challenge/MCQChallenge.tsx";
 
 export function HistoryPanel() {
     const [history, setHistory] = useState<Challenge[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
-    const {makeRequest} = useApi()
+    // const {makeRequest} = useHistoryApi()
+    const {getToken} = useAuth()
+    
     useEffect(() => {
         fetchHistory()
     },[])
@@ -16,10 +19,26 @@ export function HistoryPanel() {
         setError(null)
         
         try {
-            const data  = await makeRequest("history")
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            setHistory(data)
+            const token = await getToken()
+            const defaultOptions = {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Method": "GET",
+                    "Authorization": `Bearer ${token}`
+                }
+            }
+            const endpoint = "/history"
+            const response = await fetch(`http://localhost:8000/api${endpoint}`,
+                {...defaultOptions}
+            )
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json()
+            console.log(data.challenges)
+            setHistory(data.challenges)
         } catch (error) {
             setError("Failed to fetch history.")
             console.error(error)
